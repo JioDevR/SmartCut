@@ -1,0 +1,221 @@
+:root,
+[data-theme="obsidian"] {
+  --bg-canvas: #0b0f17;
+  --surface-dim: #0f131c;
+  --surface-low: #131b2a;
+  --surface-mid: #181c24;
+  --surface-high: #1e293b;
+  --surface-highest: #262a33;
+  
+  --border-subtle: #1e293b;
+  --border-strong: #334155;
+  --border-active: #06b6d4;
+
+  --accent-cyan: #06b6d4;
+  --accent-cyan-bright: #4cd7f6;
+  --accent-cyan-dim: rgba(6, 182, 212, 0.15);
+  --accent-indigo: #6366f1;
+  --accent-amber: #e89337;
+  --accent-red: #ef4444;
+
+  --text-pure: #f8fafc;
+  --text-primary: #dfe2ee;
+  --text-secondary: #94a3b8;
+  --text-muted: #475569;
+
+  --font-ui: 'Geist', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  --radius-xs: 2px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+  --radius-xl: 14px;
+  --radius-full: 9999px;
+}
+
+/* 2. TEMA MIDNIGHT INDIGO (Nocturno Violeta / Índigo) */
+[data-theme="midnight"] {
+  --bg-canvas: #070a14;
+  --surface-dim: #0c1020;
+  --surface-low: #11172e;
+  --surface-mid: #161e3a;
+  --surface-high: #202a50;
+  --surface-highest: #2c3a6e;
+
+  --border-subtle: #1c264a;
+  --border-strong: #2e3e78;
+  --border-active: #818cf8;
+
+  --accent-cyan: #818cf8;
+  --accent-cyan-bright: #a5b4fc;
+  --accent-cyan-dim: rgba(129, 140, 248, 0.18);
+  --accent-indigo: #c084fc;
+  --accent-amber: #f472b6;
+  --accent-red: #fb7185;
+
+  --text-pure: #ffffff;
+  --text-primary: #e0e7ff;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+}
+
+/* 3. TEMA EMERALD MATRIX (Grafito con Verde Esmeralda) */
+[data-theme="emerald"] {
+  --bg-canvas: #070c09;
+  --surface-dim: #0b1410;
+  --surface-low: #101c16;
+  --surface-mid: #15251d;
+  --surface-high: #1c3429;
+  --surface-highest: #254637;
+
+  --border-subtle: #173124;
+  --border-strong: #244d39;
+  --border-active: #10b981;
+
+  --accent-cyan: #10b981;
+  --accent-cyan-bright: #34d399;
+  --accent-cyan-dim: rgba(16, 185, 129, 0.18);
+  --accent-indigo: #06b6d4;
+  --accent-amber: #fbbf24;
+  --accent-red: #f87171;
+
+  --text-pure: #ffffff;
+  --text-primary: #ecfdf5;
+  --text-secondary: #86efac;
+  --text-muted: #4ade80;
+}
+
+/* 4. TEMA AMBER CINEMA (Carbón Cálido & Ámbar / Dorado) */
+[data-theme="amber"] {
+  --bg-canvas: #100d0b;
+  --surface-dim: #171310;
+  --surface-low: #1f1a15;
+  --surface-mid: #28211b;
+  --surface-high: #382d24;
+  --surface-highest: #4a3b30;
+
+  --border-subtle: #30261f;
+  --border-strong: #4a3b30;
+  --border-active: #f59e0b;
+
+  --accent-cyan: #f59e0b;
+  --accent-cyan-bright: #fbbf24;
+  --accent-cyan-dim: rgba(245, 158, 11, 0.18);
+  --accent-indigo: #f97316;
+  --accent-amber: #ef4444;
+  --accent-red: #f87171;
+
+  --text-pure: #fffbeb;
+  --text-primary: #fef3c7;
+  --text-secondary: #fbbf24;
+  --text-muted: #92400e;
+}
+
+/* 5. TEMA NORDIC FROST (Azul Polar / Hielo Ártico) */
+[data-theme="nordic"] {
+  --bg-canvas: #080f17;
+  --surface-dim: #0d1622;
+  --surface-low: #121e2d;
+  --surface-mid: #16263a;
+  --surface-high: #1e334d;
+  --surface-highest: #284466;
+
+  --border-subtle: #1a3048;
+  --border-strong: #27486e;
+  --border-active: #38bdf8;
+
+  --accent-cyan: #38bdf8;
+  --accent-cyan-bright: #7dd3fc;
+  --accent-cyan-dim: rgba(56, 189, 248, 0.18);
+  --accent-indigo: #60a5fa;
+  --accent-amber: #fb7185;
+  --accent-red: #f43f5e;
+
+  --text-pure: #ffffff;
+  --text-primary: #f0f9ff;
+  --text-secondary: #7dd3fc;
+  --text-muted: #38bdf8;
+}
+
+/* 6. TEMA STUDIO LIGHT (Claro Profesional de Alta Claridad) */
+[data-theme="light"] {
+  --bg-canvas: #edf2f7;
+  --surface-dim: #e2e8f0;
+  --surface-low: #ffffff;
+  --surface-mid: #f8fafc;
+  --surface-high: #e2e8f0;
+  --surface-highest: #cbd5e1;
+
+  --border-subtle: #cbd5e1;
+  --border-strong: #94a3b8;
+  --border-active: #0284c7;
+
+  --accent-cyan: #0284c7;
+  --accent-cyan-bright: #0369a1;
+  --accent-cyan-dim: rgba(2, 132, 199, 0.14);
+  --accent-indigo: #4f46e5;
+  --accent-amber: #d97706;
+  --accent-red: #dc2626;
+
+  --text-pure: #0f172a;
+  --text-primary: #1e293b;
+  --text-secondary: #475569;
+  --text-muted: #64748b;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: var(--bg-canvas);
+  color: var(--text-primary);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  line-height: 1.4;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  user-select: none;
+  -webkit-user-select: none;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+#app {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--surface-dim);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--surface-high);
+  border-radius: var(--radius-full);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--border-strong);
+}
+
+/* Material Symbols sizing */
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 20;
+  vertical-align: middle;
+  line-height: 1;
+}
+
+.material-symbols-outlined.fill {
+  font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 20;
+}

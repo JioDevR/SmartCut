@@ -1,0 +1,52 @@
+# Dependencies & Package Managers
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Production & Build outputs
+dist/
+dist-ssr/
+release_build/
+
+# Rust / Cargo
+target/
+src-tauri/target/
+**/*.rs.bk
+Cargo.lock.orig
+
+# Tauri
+src-tauri/gen/schemas/
+
+# Packaging & Distro Build artifacts
+packaging/arch/pkg/
+packaging/arch/src/
+packaging/arch/smartcut
+packaging/arch/*.pkg.tar.*
+
+# Logs & Temporary files
+logs/
+*.log
+*.tmp
+*.temp
+temp_*
+
+# Environment & Local configs
+.env
+.env.*
+!.env.example
+*.local
+
+# Editor & OS files
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.DS_Store
+Thumbs.db

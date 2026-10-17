@@ -1,0 +1,47 @@
+# Maintainer: jiodev
+pkgname=smartcut-bin
+pkgver=0.1.0
+pkgrel=1
+pkgdesc="Editor y cortador de video de alta precisión y rendimiento (Tauri + Vue 3)"
+arch=('x86_64')
+url="https://github.com/jiodev/SmartCut"
+license=('custom')
+depends=(
+    'webkit2gtk-4.1'
+    'ffmpeg'
+    'gst-plugins-good'
+    'gst-libav'
+    'gst-plugins-bad'
+    'gst-plugins-ugly'
+    'gstreamer'
+    'gtk3'
+    'cairo'
+    'gdk-pixbuf2'
+)
+optdepends=(
+    'gst-plugin-va: Aceleración por hardware por GPU (Intel / AMD)'
+    'gst-plugin-pipewire: Soporte nativo de audio PipeWire'
+)
+provides=('smartcut')
+conflicts=('smartcut')
+source=(
+    'smartcut'
+    'smartcut.desktop'
+    '32x32.png'
+    '128x128.png'
+    '128x128@2x.png'
+)
+sha256sums=('SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP')
+
+package() {
+    # Binario ejecutable principal en /usr/bin
+    install -Dm755 "${srcdir}/smartcut" "${pkgdir}/usr/bin/smartcut"
+
+    # Acceso directo para el menú de aplicaciones (.desktop)
+    install -Dm644 "${srcdir}/smartcut.desktop" "${pkgdir}/usr/share/applications/smartcut.desktop"
+
+    # Iconos del sistema en tema hicolor
+    install -Dm644 "${srcdir}/32x32.png" "${pkgdir}/usr/share/icons/hicolor/32x32/apps/smartcut.png"
+    install -Dm644 "${srcdir}/128x128.png" "${pkgdir}/usr/share/icons/hicolor/128x128/apps/smartcut.png"
+    install -Dm644 "${srcdir}/128x128@2x.png" "${pkgdir}/usr/share/icons/hicolor/256x256/apps/smartcut.png"
+}

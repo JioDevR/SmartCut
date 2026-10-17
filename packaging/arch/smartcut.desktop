@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=SmartCut
+Comment=Editor y cortador de video de alta precisión y rendimiento
+Exec=smartcut %U
+Icon=smartcut
+Terminal=false
+Type=Application
+Categories=AudioVideo;Video;AudioVideoEditing;
+MimeType=video/mp4;video/x-matroska;video/quicktime;video/webm;
+StartupWMClass=smartcut
