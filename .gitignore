@@ -33,6 +33,10 @@ logs/
 *.temp
 temp_*
 
+# Test assets & local media
+RECURSOS/
+src-tauri/RECURSOS
+
 # Environment & Local configs
 .env
 .env.*
