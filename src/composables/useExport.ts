@@ -1,4 +1,4 @@
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 import { invoke } from '@tauri-apps/api/core';
 import { listen, type UnlistenFn } from '@tauri-apps/api/event';
 import { openPath, revealItemInDir } from '@tauri-apps/plugin-opener';
@@ -10,6 +10,7 @@ export function useExport() {
   const exportMode = ref<'smart_cut' | 'reencode' | 'individual_clips'>('smart_cut');
   const availableEncoders = ref<HardwareEncoderInfo[]>([]);
   const selectedEncoder = ref('nvenc');
+  const selectedVideoCodec = ref('h264');
   const isExporting = ref(false);
   const exportProgressPercent = ref(0);
   const exportStageText = ref('');
@@ -81,15 +82,30 @@ export function useExport() {
         input_path: cachedCurrentFilePath.value,
         output_path: exportOutputPath.value,
         segments,
+        mode: exportMode.value,
+        hardware_accel: selectedEncoder.value,
+        video_codec: selectedVideoCodec.value,
+        crf: crf.value,
+        preset: preset.value,
+        audio_only: audioOnly.value,
+        audio_format: audioFormat.value,
+        container_format: containerFormat.value,
       },
     })
       .then((summary) => {
         planSummary.value = summary;
+        exportErrorMessage.value = '';
       })
       .catch((err) => {
         console.warn('Error obteniendo vista previa del plan:', err);
+        exportErrorMessage.value = typeof err === 'string' ? err : (err?.message || 'Error en vista previa del plan');
       });
   }
+
+  watch([exportMode, containerFormat, audioOnly, audioFormat, crf, preset, selectedEncoder, selectedVideoCodec], () => {
+    updateOutputExtension();
+    refreshPlanPreview();
+  });
 
   function setExportScope(scope: 'selected' | 'timeline') {
     exportScope.value = scope;
@@ -200,6 +216,7 @@ export function useExport() {
         options: {
           input_path: currentFilePath,
           output_path: exportOutputPath.value,
+          plan_id: planSummary.value?.plan_id,
           mode: exportMode.value,
           segments,
           hardware_accel: selectedEncoder.value,

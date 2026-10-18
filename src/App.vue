@@ -97,6 +97,7 @@ const {
   setTool,
   renumberClips,
   syncSplitPointsFromClips,
+  loadProjectState,
 } = useClipsManager();
 
 const {
@@ -255,8 +256,8 @@ function handleTogglePlay() {
   togglePlay(() => sortedClips.value, inPoint.value, outPoint.value);
 }
 
-function handleSeek(targetTime: number) {
-  seekTo(targetTime, () => sortedClips.value);
+function handleSeek(targetTime: number, preferredClipId?: string | null) {
+  seekTo(targetTime, () => sortedClips.value, preferredClipId);
 }
 
 function handleStepFrame(delta: number) {
@@ -281,12 +282,12 @@ function handleCloseGap(gap: TimelineGap) {
 
 function handleSelectClip(clip: ClipItem) {
   selectClip(clip.id);
-  handleSeek(clip.start);
+  handleSeek(clip.start, clip.id);
 }
 
 function handlePlayClip(clip: ClipItem) {
   selectClip(clip.id);
-  handleSeek(clip.start);
+  handleSeek(clip.start, clip.id);
   if (videoPlayer.value) {
     videoPlayer.value.play().catch(() => {});
   }
@@ -429,6 +430,7 @@ async function handleSaveProject() {
       duration: duration.value,
       metadata: metadata.value,
       clips: clips.value,
+      selectedClipId: selectedClipId.value,
       splitPoints: splitPoints.value,
       inPoint: inPoint.value,
       outPoint: outPoint.value,
@@ -457,15 +459,20 @@ async function handleOpenProject() {
       throw new Error('El archivo no contiene una ruta de medio válida.');
     }
     loadVideoFile(project.mediaPath, {
-      onInitClips: () => {
-        if (Array.isArray(project.clips)) {
-          clips.value = project.clips;
+      onInitClips: (detectedDur: number) => {
+        // VF-13: Validar, ordenar, normalizar rangos y restaurar estado completo del editor
+        const validDuration = detectedDur > 0 ? detectedDur : (project.duration || 0);
+        if (Array.isArray(project.clips) && project.clips.length > 0) {
+          loadProjectState(
+            project.clips,
+            validDuration,
+            project.selectedClipId,
+            project.inPoint,
+            project.outPoint
+          );
+        } else {
+          initClips(validDuration);
         }
-        if (Array.isArray(project.splitPoints)) {
-          splitPoints.value = project.splitPoints;
-        }
-        if (typeof project.inPoint === 'number') inPoint.value = project.inPoint;
-        if (typeof project.outPoint === 'number') outPoint.value = project.outPoint;
       },
       onLoadVisualizations: (path, dur) => loadVisualizations(path, dur),
       onFitToScreen: () => fitToScreen(duration.value, () => requestVisibleThumbnails(currentFilePath.value, duration.value, () => isPlaying.value)),

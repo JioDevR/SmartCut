@@ -21,9 +21,10 @@ pub struct KeyframeInfo {
     pub min_leading_time: f64,
 }
 
+/// Lee paquetes dentro del intervalo de tiempo para el ordinal de stream de video indicado (v:video_ordinal)
 pub fn read_packets_in_interval(
     path: &str,
-    stream_idx: usize,
+    video_ordinal: usize,
     start_sec: f64,
     end_sec: f64,
 ) -> Result<Vec<PacketInfo>, String> {
@@ -36,7 +37,7 @@ pub fn read_packets_in_interval(
             "-v",
             "error",
             "-select_streams",
-            &format!("v:{}", stream_idx),
+            &format!("v:{}", video_ordinal),
             "-show_entries",
             "packet=pts,pts_time,dts,dts_time,duration,duration_time,flags",
             "-of",
@@ -86,13 +87,14 @@ pub fn read_packets_in_interval(
     Ok(packets)
 }
 
+/// Extrae keyframes con información de GOP usando el ordinal de video (v:video_ordinal)
 pub fn get_keyframes_with_gop_info(
     path: &str,
-    stream_idx: usize,
+    video_ordinal: usize,
     start_sec: f64,
     end_sec: f64,
 ) -> Result<Vec<KeyframeInfo>, String> {
-    let packets = read_packets_in_interval(path, stream_idx, start_sec, end_sec)?;
+    let packets = read_packets_in_interval(path, video_ordinal, start_sec, end_sec)?;
     if packets.is_empty() {
         return Ok(Vec::new());
     }

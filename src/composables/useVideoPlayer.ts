@@ -55,6 +55,8 @@ export function useVideoPlayer() {
   let queuedSeekTime: number | null = null;
   let queuedSeekFast = false;
   let playbackRafId: number | null = null;
+  // VF-12: Rastreo del clip activo durante la reproducción
+  const activePlaybackClipId = ref<string | null>(null);
 
   async function loadSampleVideosList() {
     try {
@@ -202,9 +204,16 @@ export function useVideoPlayer() {
     }
   }
 
-  function resolveSourceTime(clampedTime: number, clipsList: ClipItem[]): number | null {
+  // VF-12: Resuelve el tiempo de decodificación en base al clip activo o preferido
+  function resolveSourceTime(clampedTime: number, clipsList: ClipItem[], preferredClipId?: string | null): number | null {
     if (clipsList.length === 0) return clampedTime;
-    const clip = clipsList.find((c) => clampedTime >= c.start - 0.01 && clampedTime <= c.end + 0.01);
+    let clip: ClipItem | null = null;
+    if (preferredClipId) {
+      clip = clipsList.find((c) => c.id === preferredClipId && clampedTime >= c.start - 0.05 && clampedTime <= c.end + 0.05) || null;
+    }
+    if (!clip) {
+      clip = clipsList.find((c) => clampedTime >= c.start - 0.01 && clampedTime <= c.end + 0.01) || null;
+    }
     if (clip) {
       const offset = Math.max(0, Math.min(clampedTime - clip.start, clip.end - clip.start));
       const srcStart = clip.sourceStart !== undefined ? clip.sourceStart : clip.start;
@@ -244,16 +253,27 @@ export function useVideoPlayer() {
     }
   }
 
+  // VF-12: Desplaza el cabezal asociando explícitamente la instancia de clip activa
   function seekTo(
     targetTime: number,
-    getClips?: () => ClipItem[]
+    getClips?: () => ClipItem[],
+    preferredClipId?: string | null
   ) {
     if (!videoPlayer.value || duration.value === 0) return;
     const clamped = Math.max(0, Math.min(targetTime, duration.value));
     currentTime.value = clamped;
 
     const clipsList = getClips ? getClips() : [];
-    const srcTime = resolveSourceTime(clamped, clipsList);
+    let clip: ClipItem | null = null;
+    if (preferredClipId) {
+      clip = clipsList.find((c) => c.id === preferredClipId && clamped >= c.start - 0.05 && clamped <= c.end + 0.05) || null;
+    }
+    if (!clip && clipsList.length > 0) {
+      clip = clipsList.find((c) => clamped >= c.start - 0.01 && clamped <= c.end + 0.01) || null;
+    }
+    activePlaybackClipId.value = clip ? clip.id : null;
+
+    const srcTime = resolveSourceTime(clamped, clipsList, clip?.id);
 
     if (srcTime !== null) {
       dispatchSeek(srcTime);
@@ -262,10 +282,12 @@ export function useVideoPlayer() {
       if (isPlaying.value) {
         const nextClip = clipsList.find((c) => c.start >= clamped);
         if (nextClip) {
-          seekTo(nextClip.start, getClips);
+          activePlaybackClipId.value = nextClip.id;
+          seekTo(nextClip.start, getClips, nextClip.id);
         } else {
           videoPlayer.value.pause();
           isPlaying.value = false;
+          activePlaybackClipId.value = null;
         }
       } else {
         if (!videoPlayer.value.paused) {
@@ -290,12 +312,12 @@ export function useVideoPlayer() {
     const fps = metadata.value.fps || 30;
     const frameDuration = 1 / fps;
     videoPlayer.value.pause();
-    seekTo(currentTime.value + frameDelta * frameDuration, getClips);
+    seekTo(currentTime.value + frameDelta * frameDuration, getClips, activePlaybackClipId.value);
   }
 
   function stepSeconds(secondsDelta: number, getClips?: () => ClipItem[]) {
     if (!videoPlayer.value) return;
-    seekTo(currentTime.value + secondsDelta, getClips);
+    seekTo(currentTime.value + secondsDelta, getClips, activePlaybackClipId.value);
   }
 
   function togglePlay(getClips?: () => ClipItem[], inPt?: number, outPt?: number) {
@@ -307,13 +329,23 @@ export function useVideoPlayer() {
 
       const clipsList = getClips ? getClips() : [];
       if (clipsList.length > 0) {
-        const inClip = clipsList.some((c) => currentTime.value >= c.start - 0.001 && currentTime.value < c.end - 0.001);
-        if (!inClip) {
+        let matchingClip = activePlaybackClipId.value
+          ? clipsList.find((c) => c.id === activePlaybackClipId.value && currentTime.value >= c.start - 0.01 && currentTime.value < c.end - 0.001)
+          : null;
+        if (!matchingClip) {
+          matchingClip = clipsList.find((c) => currentTime.value >= c.start - 0.001 && currentTime.value < c.end - 0.001) || null;
+        }
+
+        if (matchingClip) {
+          activePlaybackClipId.value = matchingClip.id;
+        } else {
           const nextClip = clipsList.find((c) => c.start >= currentTime.value);
           if (nextClip) {
-            seekTo(nextClip.start, getClips);
+            activePlaybackClipId.value = nextClip.id;
+            seekTo(nextClip.start, getClips, nextClip.id);
           } else if (clipsList.length > 0) {
-            seekTo(clipsList[0].start, getClips);
+            activePlaybackClipId.value = clipsList[0].id;
+            seekTo(clipsList[0].start, getClips, clipsList[0].id);
           } else {
             return;
           }
@@ -326,44 +358,73 @@ export function useVideoPlayer() {
     }
   }
 
+  // VF-12: Verificación de límites por instancia activa de clip en lugar de búsqueda por tiempo de fuente
   function checkPlaybackBounds(getClips: () => ClipItem[]) {
     if (!isPlaying.value || !videoPlayer.value) return;
 
     const vTime = videoPlayer.value.currentTime;
     const clipsList = getClips();
 
-    const curClip = clipsList.find((c) => {
-      const sStart = c.sourceStart !== undefined ? c.sourceStart : c.start;
-      const sEnd = c.sourceEnd !== undefined ? c.sourceEnd : c.end;
-      return vTime >= sStart - 0.05 && vTime <= sEnd + 0.05;
-    });
+    if (clipsList.length === 0) {
+      currentTime.value = vTime;
+      if (isPlaying.value) {
+        playbackRafId = requestAnimationFrame(() => checkPlaybackBounds(getClips));
+      }
+      return;
+    }
+
+    let curClip: ClipItem | null = null;
+    if (activePlaybackClipId.value) {
+      curClip = clipsList.find((c) => c.id === activePlaybackClipId.value) || null;
+    }
+
+    if (!curClip) {
+      curClip = clipsList.find((c) => currentTime.value >= c.start - 0.01 && currentTime.value <= c.end + 0.01) || null;
+      if (curClip) {
+        activePlaybackClipId.value = curClip.id;
+      }
+    }
 
     if (curClip) {
       const sStart = curClip.sourceStart !== undefined ? curClip.sourceStart : curClip.start;
       const sEnd = curClip.sourceEnd !== undefined ? curClip.sourceEnd : curClip.end;
-      const timelinePos = curClip.start + Math.max(0, vTime - sStart);
-      currentTime.value = timelinePos;
+      const clipDuration = curClip.end - curClip.start;
 
-      if (vTime >= sEnd - 0.035 || timelinePos >= curClip.end - 0.035) {
-        const curIdx = clipsList.findIndex((c) => c.id === curClip.id);
-        const nextClip = curIdx !== -1 && curIdx < clipsList.length - 1 ? clipsList[curIdx + 1] : null;
+      // Comprobar si el decodificador de video está reproduciendo dentro del rango de esta instancia
+      if (vTime >= sStart - 0.15 && vTime <= sEnd + 0.15) {
+        const clipProgress = Math.max(0, Math.min(vTime - sStart, clipDuration));
+        const timelinePos = curClip.start + clipProgress;
+        currentTime.value = timelinePos;
 
-        if (nextClip) {
-          seekTo(nextClip.start, getClips);
-        } else {
-          videoPlayer.value.pause();
-          isPlaying.value = false;
-          currentTime.value = curClip.end;
-          return;
+        if (vTime >= sEnd - 0.035 || timelinePos >= curClip.end - 0.035) {
+          const curIdx = clipsList.findIndex((c) => c.id === curClip!.id);
+          const nextClip = curIdx !== -1 && curIdx < clipsList.length - 1 ? clipsList[curIdx + 1] : null;
+
+          if (nextClip) {
+            activePlaybackClipId.value = nextClip.id;
+            seekTo(nextClip.start, getClips, nextClip.id);
+          } else {
+            videoPlayer.value.pause();
+            isPlaying.value = false;
+            currentTime.value = curClip.end;
+            activePlaybackClipId.value = null;
+            return;
+          }
         }
+      } else {
+        // Fuera del rango de fuente del clip activo: resincronizar
+        const offset = Math.max(0, Math.min(currentTime.value - curClip.start, clipDuration));
+        dispatchSeek(sStart + offset);
       }
     } else {
       const nextClip = clipsList.find((c) => c.start >= currentTime.value);
       if (nextClip) {
-        seekTo(nextClip.start, getClips);
+        activePlaybackClipId.value = nextClip.id;
+        seekTo(nextClip.start, getClips, nextClip.id);
       } else {
         videoPlayer.value.pause();
         isPlaying.value = false;
+        activePlaybackClipId.value = null;
         return;
       }
     }
@@ -375,14 +436,24 @@ export function useVideoPlayer() {
 
   function fastSeekTo(
     targetTime: number,
-    getClips?: () => ClipItem[]
+    getClips?: () => ClipItem[],
+    preferredClipId?: string | null
   ) {
     if (!videoPlayer.value || duration.value === 0) return;
     const clamped = Math.max(0, Math.min(targetTime, duration.value));
     currentTime.value = clamped;
 
     const clipsList = getClips ? getClips() : [];
-    const srcTime = resolveSourceTime(clamped, clipsList);
+    let clip: ClipItem | null = null;
+    if (preferredClipId) {
+      clip = clipsList.find((c) => c.id === preferredClipId && clamped >= c.start - 0.05 && clamped <= c.end + 0.05) || null;
+    }
+    if (!clip && clipsList.length > 0) {
+      clip = clipsList.find((c) => clamped >= c.start - 0.01 && clamped <= c.end + 0.01) || null;
+    }
+    activePlaybackClipId.value = clip ? clip.id : null;
+
+    const srcTime = resolveSourceTime(clamped, clipsList, clip?.id);
 
     if (srcTime !== null) {
       dispatchSeek(srcTime, true);
@@ -541,14 +612,25 @@ export function useVideoPlayer() {
     const clipsList = getClips ? getClips() : [];
 
     if (clipsList.length > 0) {
-      const clip = clipsList.find((c) => {
-        const sStart = c.sourceStart !== undefined ? c.sourceStart : c.start;
-        const sEnd = c.sourceEnd !== undefined ? c.sourceEnd : c.end;
-        return vTime >= sStart && vTime < sEnd;
-      });
+      // VF-12: Utilizar la instancia de clip activa en lugar de buscar globalmente por rango de fuente
+      let clip: ClipItem | null = null;
+      if (activePlaybackClipId.value) {
+        clip = clipsList.find((c) => c.id === activePlaybackClipId.value) || null;
+      }
+      if (!clip) {
+        clip = clipsList.find((c) => currentTime.value >= c.start - 0.01 && currentTime.value <= c.end + 0.01) || null;
+        if (clip) {
+          activePlaybackClipId.value = clip.id;
+        }
+      }
+
       if (clip) {
         const sStart = clip.sourceStart !== undefined ? clip.sourceStart : clip.start;
-        currentTime.value = clip.start + Math.max(0, vTime - sStart);
+        const sEnd = clip.sourceEnd !== undefined ? clip.sourceEnd : clip.end;
+        if (vTime >= sStart - 0.15 && vTime <= sEnd + 0.15) {
+          const clipProgress = Math.max(0, Math.min(vTime - sStart, clip.end - clip.start));
+          currentTime.value = clip.start + clipProgress;
+        }
       }
     } else {
       currentTime.value = vTime;
@@ -584,6 +666,7 @@ export function useVideoPlayer() {
     audioLevelL,
     audioLevelR,
     audioDbText,
+    activePlaybackClipId,
     loadSampleVideosList,
     loadVideoFile,
     openNativeFileDialog,

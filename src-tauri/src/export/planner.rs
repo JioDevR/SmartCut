@@ -73,23 +73,11 @@ pub fn normalize_segments(
         }
     }
 
-    // Mantener estrictamente el orden secuencial de la línea de tiempo definida por el usuario
-
-    // Unir únicamente segmentos estrictamente solapados (evitar solapamientos accidentales)
-    let mut merged: Vec<NormalizedSegment> = Vec::new();
-    for seg in valid {
-        if let Some(last) = merged.last_mut() {
-            if seg.start < last.end - 0.005 && seg.start >= last.start {
-                if seg.end > last.end {
-                    last.end = seg.end;
-                }
-                continue;
-            }
-        }
-        merged.push(seg);
-    }
-
-    merged
+    // VF-06: Conservar cada segmento como una instancia de edición independiente.
+    // No fusionar repeticiones ni solapamientos en tiempo de fuente, garantizando
+    // que las repeticiones intencionales se conserven y la duración final coincida
+    // exactamente con la línea de tiempo del usuario.
+    valid
 }
 
 pub fn plan_single_segment(
@@ -116,8 +104,25 @@ pub fn plan_single_segment(
     }
 
     // Buscar keyframes que caen dentro del segmento
-    let k_first = keyframes.iter().find(|k| k.pts_time > seg_start + half_frame && k.pts_time < seg_end - half_frame);
-    let k_last = keyframes.iter().rfind(|k| k.pts_time > seg_start + half_frame && k.pts_time < seg_end - half_frame);
+    let mut candidate_kfs: Vec<&KeyframeInfo> = keyframes
+        .iter()
+        .filter(|k| k.pts_time > seg_start + half_frame && k.pts_time < seg_end - half_frame)
+        .collect();
+
+    // En HEVC con corte cercano al inicio del archivo (seg_start < 5.0 y seg_start > 0.05),
+    // el primer keyframe del archivo a menudo tiene dependencias hacia atrás en el demuxer de MKV.
+    // Si disponemos de un segundo keyframe dentro del segmento, avanzar kf al segundo keyframe
+    // asegura que la pieza HEAD absorba el GOP inicial y la pieza BODY empiece en un keyframe 100% limpio.
+    if is_hevc && seg_start > 0.05 && candidate_kfs.len() >= 2 {
+        if let Some(first_kf) = candidate_kfs.first() {
+            if first_kf.pts_time < 6.0 {
+                candidate_kfs.remove(0);
+            }
+        }
+    }
+
+    let k_first = candidate_kfs.first().copied();
+    let k_last = candidate_kfs.last().copied();
 
     match (k_first, k_last) {
         (Some(kf), Some(kl)) if kf.pts_time < kl.pts_time => {
@@ -270,17 +275,36 @@ mod tests {
     }
 
     #[test]
-    fn test_segment_normalization_merges_overlapping() {
+    fn test_vf06_duplicate_and_overlapping_segments_preserved() {
         let raw = vec![
             super::super::ExportSegment { start: 1.0, end: 3.5, name: None },
-            super::super::ExportSegment { start: 3.0, end: 5.0, name: None }, // Overlaps [1.0, 3.5]
+            super::super::ExportSegment { start: 1.0, end: 3.5, name: None }, // Repetición exacta
+            super::super::ExportSegment { start: 3.0, end: 5.0, name: None }, // Solapa el anterior
             super::super::ExportSegment { start: 10.0, end: 12.0, name: None },
         ];
         let norm = normalize_segments(&raw, 20.0);
-        assert_eq!(norm.len(), 2);
+        assert_eq!(norm.len(), 4, "VF-06: No se deben fusionar clips duplicados ni solapados");
         assert_eq!(norm[0].start, 1.0);
-        assert_eq!(norm[0].end, 5.0);
-        assert_eq!(norm[1].start, 10.0);
-        assert_eq!(norm[1].end, 12.0);
+        assert_eq!(norm[0].end, 3.5);
+        assert_eq!(norm[1].start, 1.0);
+        assert_eq!(norm[1].end, 3.5);
+        assert_eq!(norm[2].start, 3.0);
+        assert_eq!(norm[2].end, 5.0);
+        assert_eq!(norm[3].start, 10.0);
+        assert_eq!(norm[3].end, 12.0);
+    }
+
+    #[test]
+    fn test_reverse_order_segments_preserved() {
+        let raw = vec![
+            super::super::ExportSegment { start: 10.0, end: 12.0, name: None },
+            super::super::ExportSegment { start: 2.0, end: 4.0, name: None },
+        ];
+        let norm = normalize_segments(&raw, 20.0);
+        assert_eq!(norm.len(), 2);
+        assert_eq!(norm[0].start, 10.0);
+        assert_eq!(norm[0].end, 12.0);
+        assert_eq!(norm[1].start, 2.0);
+        assert_eq!(norm[1].end, 4.0);
     }
 }

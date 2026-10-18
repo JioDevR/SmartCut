@@ -175,6 +175,9 @@ export function useClipsManager() {
       else return;
     }
 
+    // VF-13: Asegurar que clips esté ordenado cronológicamente antes del corte
+    clips.value.sort((a, b) => a.start - b.start);
+
     const index = clips.value.findIndex((c) => t > c.start + 0.05 && t < c.end - 0.05);
     if (index === -1) return;
 
@@ -328,6 +331,83 @@ export function useClipsManager() {
     }
   }
 
+  // VF-13: Normaliza, valida y restaura completamente el estado al abrir un proyecto
+  function loadProjectState(
+    loadedClips: any[],
+    mediaDuration: number,
+    preferredSelectedClipId?: string | null,
+    savedInPoint?: number,
+    savedOutPoint?: number
+  ) {
+    if (!Array.isArray(loadedClips) || loadedClips.length === 0 || mediaDuration <= 0) {
+      if (mediaDuration > 0) initClips(mediaDuration);
+      return;
+    }
+
+    const validClips: ClipItem[] = [];
+
+    for (let i = 0; i < loadedClips.length; i++) {
+      const raw = loadedClips[i];
+      if (typeof raw !== 'object' || raw === null) continue;
+
+      let start = typeof raw.start === 'number' && !isNaN(raw.start) ? raw.start : 0;
+      let end = typeof raw.end === 'number' && !isNaN(raw.end) ? raw.end : mediaDuration;
+
+      // Clamping al timeline
+      start = Math.max(0, Math.min(start, mediaDuration - 0.05));
+      end = Math.max(start + 0.05, Math.min(end, mediaDuration));
+
+      let sourceStart = typeof raw.sourceStart === 'number' && !isNaN(raw.sourceStart) ? raw.sourceStart : start;
+      let sourceEnd = typeof raw.sourceEnd === 'number' && !isNaN(raw.sourceEnd) ? raw.sourceEnd : end;
+
+      // Clamping a la duración del archivo de medio detectado
+      sourceStart = Math.max(0, Math.min(sourceStart, mediaDuration));
+      sourceEnd = Math.max(sourceStart + 0.05, Math.min(sourceEnd, mediaDuration));
+
+      const id = typeof raw.id === 'string' && raw.id ? raw.id : `clip-${i + 1}`;
+      const name = typeof raw.name === 'string' && raw.name ? raw.name : `Clip ${i + 1}`;
+      const color = typeof raw.color === 'string' && raw.color ? raw.color : CLIP_COLORS[i % CLIP_COLORS.length];
+
+      validClips.push({
+        id,
+        name,
+        start,
+        end,
+        sourceStart,
+        sourceEnd,
+        color,
+      });
+    }
+
+    if (validClips.length === 0) {
+      initClips(mediaDuration);
+      return;
+    }
+
+    // Ordenar clips cronológicamente por inicio en timeline
+    validClips.sort((a, b) => a.start - b.start);
+    clips.value = validClips;
+
+    // VF-13: Restaurar o seleccionar un clip existente válido
+    if (preferredSelectedClipId && validClips.some((c) => c.id === preferredSelectedClipId)) {
+      selectedClipId.value = preferredSelectedClipId;
+    } else {
+      selectedClipId.value = validClips[0].id;
+    }
+
+    // Sincronizar splitPoints ordenados
+    syncSplitPointsFromClips();
+
+    // Validar inPoint y outPoint contra la duración real del archivo
+    const inVal = typeof savedInPoint === 'number' && !isNaN(savedInPoint) ? savedInPoint : 0;
+    const outVal = typeof savedOutPoint === 'number' && !isNaN(savedOutPoint) ? savedOutPoint : mediaDuration;
+    inPoint.value = Math.max(0, Math.min(inVal, mediaDuration));
+    outPoint.value = Math.max(inPoint.value, Math.min(outVal, mediaDuration));
+
+    undoStack.value = [];
+    redoStack.value = [];
+  }
+
   function setTool(tool: ActiveTool) {
     activeTool.value = tool;
   }
@@ -364,5 +444,6 @@ export function useClipsManager() {
     setTool,
     renumberClips,
     syncSplitPointsFromClips,
+    loadProjectState,
   };
 }

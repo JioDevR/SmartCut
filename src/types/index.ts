@@ -63,6 +63,7 @@ export interface ExportProgressPayload {
 }
 
 export interface ExportPlanSummary {
+  plan_id?: string;
   total_duration: number;
   reencode_duration: number;
   copy_duration: number;
@@ -73,6 +74,7 @@ export interface ExportPlanSummary {
 export interface ExportOptionsPayload {
   input_path: string;
   output_path: string;
+  plan_id?: string;
   mode: 'smart_cut' | 'reencode' | 'individual_clips';
   segments: Array<{ start: number; end: number; name?: string }>;
   hardware_accel?: string;
