@@ -1,0 +1,8 @@
+# Rust / Cargo
+/target/
+**/*.rs.bk
+Cargo.lock.orig
+
+# Tauri v2 generated files
+/gen/
+/gen/schemas/

@@ -1,0 +1,108 @@
+# ==============================================================================
+# SmartCut — .gitignore
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# 1. Dependencias y Gestores de Paquetes
+# ------------------------------------------------------------------------------
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+.pnpm-store/
+
+# ------------------------------------------------------------------------------
+# 2. Artefactos de Compilación Frontend (Vite / Vue)
+# ------------------------------------------------------------------------------
+dist/
+dist-ssr/
+.vite/
+.cache/
+*.tsbuildinfo
+
+# ------------------------------------------------------------------------------
+# 3. Backend Rust & Tauri v2
+# ------------------------------------------------------------------------------
+target/
+src-tauri/target/
+**/*.rs.bk
+Cargo.lock.orig
+src-tauri/gen/schemas/
+src-tauri/gen/
+
+# ------------------------------------------------------------------------------
+# 4. Empaquetado y Binarios de Distribución
+# ------------------------------------------------------------------------------
+release_build/
+packaging/arch/pkg/
+packaging/arch/src/
+packaging/arch/smartcut
+packaging/arch/*.pkg.tar.*
+*.deb
+*.AppImage
+*.rpm
+*.dmg
+*.exe
+*.msi
+*.zip
+*.tar.gz
+*.tar.xz
+*.pkg.tar.zst
+
+# ------------------------------------------------------------------------------
+# 5. Archivos Temporales, Logs y Procesos de Video
+# ------------------------------------------------------------------------------
+logs/
+*.log
+*.tmp
+*.temp
+temp_*
+preview_*
+*.preview
+
+# ------------------------------------------------------------------------------
+# 6. Muestras de Video Locales y Material de Prueba
+# ------------------------------------------------------------------------------
+RECURSOS
+RECURSOS/
+src-tauri/RECURSOS
+src-tauri/RECURSOS/
+test_assets/
+*.raw
+*.y4m
+
+# ------------------------------------------------------------------------------
+# 7. Variables de Entorno y Claves
+# ------------------------------------------------------------------------------
+.env
+.env.*
+!.env.example
+*.local
+
+# ------------------------------------------------------------------------------
+# 8. IDEs, Editores y Sistema Operativo
+# ------------------------------------------------------------------------------
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+*~
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# ------------------------------------------------------------------------------
+# 9. Asistentes IA y Scratch Local
+# ------------------------------------------------------------------------------
+.gemini/
+.system_generated/
